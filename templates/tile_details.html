@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Jira Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .page-title {
+            color: #333;
+            font-size: 2em;
+            font-weight: 300;
+        }
+
+        .page-description {
+            color: #666;
+            font-size: 1.1em;
+            margin-top: 5px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .username {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .logout-btn {
+            background: #ff4757;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #ff3742;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .content-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.95em;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:nth-child(even):hover {
+            background-color: #f0f0f0;
+        }
+
+        .ticket-id {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-in-progress {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-blocked {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .status-done {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+
+        .status-todo {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .header-left {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .page-title {
+                font-size: 1.5em;
+            }
+
+            .content-container {
+                padding: 20px;
+            }
+
+            .stats-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            th, td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <a href="{{ url_for('dashboard') }}" class="back-btn">
+                ← Back to Dashboard
+            </a>
+            <div>
+                <h1 class="page-title">{{ title }}</h1>
+                <p class="page-description">{{ description }}</p>
+            </div>
+        </div>
+        <div class="user-info">
+            <span class="username">Welcome, {{ username }}!</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+    <div class="content-container">
+        {% if error %}
+            <div class="error-message">
+                <strong>API Error:</strong> {{ error }}
+                <br><br>
+                <small>
+                    This might be due to Jira API changes. The system is trying to use the latest API version.
+                    If the problem persists, please check your Jira configuration or contact your administrator.
+                </small>
+            </div>
+        {% endif %}
+
+        <!-- Summary Type Navigation -->
+        <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{{ url_for('tile_details', query_key=request.view_args['query_key'], summary_type='status') }}" 
+               style="padding: 8px 16px; border-radius: 20px; text-decoration: none; background: {{ '#667eea' if summary_type == 'status' else '#f8f9fa' }}; color: {{ 'white' if summary_type == 'status' else '#333' }};">
+                By Status
+            </a>
+            <a href="{{ url_for('tile_details', query_key=request.view_args['query_key'], summary_type='issue_type') }}" 
+               style="padding: 8px 16px; border-radius: 20px; text-decoration: none; background: {{ '#667eea' if summary_type == 'issue_type' else '#f8f9fa' }}; color: {{ 'white' if summary_type == 'issue_type' else '#333' }};">
+                By Issue Type
+            </a>
+            <a href="{{ url_for('tile_details', query_key=request.view_args['query_key'], summary_type='client') }}" 
+               style="padding: 8px 16px; border-radius: 20px; text-decoration: none; background: {{ '#667eea' if summary_type == 'client' else '#f8f9fa' }}; color: {{ 'white' if summary_type == 'client' else '#333' }};">
+                By Client
+            </a>
+            <a href="{{ url_for('tile_details', query_key=request.view_args['query_key'], summary_type='priority') }}" 
+               style="padding: 8px 16px; border-radius: 20px; text-decoration: none; background: {{ '#667eea' if summary_type == 'priority' else '#f8f9fa' }}; color: {{ 'white' if summary_type == 'priority' else '#333' }};">
+                By Priority
+            </a>
+        </div>
+
+        <!-- Summary Section -->
+        {% if summary_type == 'status' %}
+            <!-- Status summary in table format -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for status, count in summary_data.items() %}
+                        <tr>
+                            <td style="font-weight: bold;">
+                                <span class="status 
+                                    {% if 'In Progress' in status %}status-in-progress
+                                    {% elif 'Blocked' in status %}status-blocked
+                                    {% elif 'Done' in status %}status-done
+                                    {% else %}status-todo{% endif %}">
+                                    {{ status }}
+                                </span>
+                            </td>
+                            <td style="text-align: center;">
+                                {% if count > 0 %}
+                                    <a href="{{ url_for('tile_tickets', query_key=request.view_args['query_key'], summary_type=summary_type, value=status) }}" 
+                                       style="text-decoration: none; color: inherit; font-weight: bold; font-size: 1.2em;">
+                                        {{ count }}
+                                    </a>
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <!-- Total row -->
+                        <tr style="background: #f5f5f5; font-weight: bold;">
+                            <td>Total Unique Issues:</td>
+                            <td style="text-align: center; font-size: 1.2em;">{{ grand_total }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <!-- Nested summary with status breakdown -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ summary_type.replace('_', ' ').title() }}</th>
+                            <th colspan="{{ all_statuses|length }}">Status</th>
+                            <th>T:</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            {% for status in all_statuses %}
+                                <th style="background: {% if 'RESOLVED' in status or 'PENDING' in status or 'WAITING' in status %}#ff9800{% else %}#4caf50{% endif %}; color: white; border-radius: 5px; padding: 8px;">{{ status }}</th>
+                            {% endfor %}
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category, status_counts in summary_data.items() %}
+                        <tr>
+                            <td style="font-weight: bold;">
+                                {% if summary_type == 'issue_type' %}
+                                    {% if category == 'Incident' %}🔴{% elif category == 'Service Request' %}🟢{% elif category == 'Task' %}🔵{% else %}⚪{% endif %}
+                                    {{ category }}
+                                {% else %}
+                                    {{ category }}
+                                {% endif %}
+                            </td>
+                            {% for status in all_statuses %}
+                                {% set count = status_counts.get(status, 0) %}
+                                <td style="text-align: center;">
+                                    {% if count > 0 %}
+                                        <a href="{{ url_for('tile_tickets', query_key=request.view_args['query_key'], summary_type=summary_type, value=category, status_filter=status) }}" 
+                                           style="text-decoration: none; color: inherit; font-weight: bold;">
+                                            {{ count }}
+                                        </a>
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                            <td style="text-align: center; font-weight: bold;">{{ category_totals.get(category, 0) }}</td>
+                        </tr>
+                        {% endfor %}
+                        <!-- Total row -->
+                        <tr style="background: #f5f5f5; font-weight: bold;">
+                            <td>Total Unique Issues:</td>
+                            {% for status in all_statuses %}
+                                <td style="text-align: center;">{{ status_totals.get(status, 0) }}</td>
+                            {% endfor %}
+                            <td style="text-align: center;">{{ grand_total }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html> 

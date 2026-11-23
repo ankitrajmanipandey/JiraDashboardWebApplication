@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Jira Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .page-title {
+            color: #333;
+            font-size: 2em;
+            font-weight: 300;
+        }
+
+        .page-description {
+            color: #666;
+            font-size: 1.1em;
+            margin-top: 5px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .username {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .logout-btn {
+            background: #ff4757;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #ff3742;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .content-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.95em;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:nth-child(even):hover {
+            background-color: #f0f0f0;
+        }
+
+        .ticket-id {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-in-progress {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-blocked {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .status-done {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+
+        .status-todo {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .breadcrumb {
+            margin-bottom: 20px;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 0.9em;
+        }
+
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .header-left {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .page-title {
+                font-size: 1.5em;
+            }
+
+            .content-container {
+                padding: 20px;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            th, td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <a href="{{ url_for('tile_details', query_key=query_key, summary_type=summary_type) }}" class="back-btn">
+                ← Back to Summary
+            </a>
+            <div>
+                <h1 class="page-title">{{ title }}</h1>
+                <p class="page-description">{{ description }}</p>
+            </div>
+        </div>
+        <div class="user-info">
+            <span class="username">Welcome, {{ username }}!</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+    <div class="content-container">
+        {% if error %}
+            <div class="error-message">
+                <strong>API Error:</strong> {{ error }}
+                <br><br>
+                <small>
+                    This might be due to Jira API changes. The system is trying to use the latest API version.
+                    If the problem persists, please check your Jira configuration or contact your administrator.
+                </small>
+            </div>
+        {% endif %}
+
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a> → 
+            <a href="{{ url_for('tile_details', query_key=query_key, summary_type=summary_type) }}">{{ summary_type.replace('_', ' ').title() }} Summary</a> → 
+            {% if status_filter %}
+                <a href="{{ url_for('tile_details', query_key=query_key, summary_type=summary_type, value=selected_value) }}">{{ selected_value }}</a> → 
+                {{ status_filter }}
+            {% else %}
+                {{ selected_value }}
+            {% endif %}
+        </div>
+
+        {% if tickets and tickets|length > 0 %}
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Jira ID</th>
+                            <th>Description</th>
+                            <th>Reporter</th>
+                            <th>Assignee</th>
+                            <th>Created</th>
+                            <th>Updated</th>
+                            <th>Status</th>
+                            <th>Status Category</th>
+                            <th>TFS ID</th>
+                            <th>Organization</th>
+                            <th>Issue Type</th>
+                            <th>Priority</th>
+                            <th>Client Name</th>
+                            <th>Time Spent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr>
+                            <td class="ticket-id">
+                                <a href="{{ JIRA_HOST }}/browse/{{ ticket['Jira ID'] }}" target="_blank" style="text-decoration: none; color: inherit;">
+                                    {{ ticket['Jira ID'] }}
+                                </a>
+                            </td>
+                            <td>{{ ticket['Description'] }}</td>
+                            <td>{{ ticket['Reporter'] }}</td>
+                            <td>{{ ticket['Assignee'] }}</td>
+                            <td>{{ ticket['Created'] }}</td>
+                            <td>{{ ticket['Updated'] }}</td>
+                            <td>
+                                <span class="status 
+                                    {% if 'In Progress' in ticket['Status'] %}status-in-progress
+                                    {% elif 'Blocked' in ticket['Status'] %}status-blocked
+                                    {% elif 'Done' in ticket['Status'] %}status-done
+                                    {% else %}status-todo{% endif %}">
+                                    {{ ticket['Status'] }}
+                                </span>
+                            </td>
+                            <td>{{ ticket['Status Category'] }}</td>
+                            <td>{{ ticket['TFS ID'] }}</td>
+                            <td>{{ ticket['Organization'] }}</td>
+                            <td>{{ ticket['Issue Type'] }}</td>
+                            <td>{{ ticket['Priority'] }}</td>
+                            <td>{{ ticket['Client Name'] }}</td>
+                            <td>{{ ticket['Time Spent'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="no-data">
+                <p>No tickets found for {{ summary_type.replace('_', ' ') }}: {{ selected_value }}{% if status_filter %} with status: {{ status_filter }}{% endif %}</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html> 

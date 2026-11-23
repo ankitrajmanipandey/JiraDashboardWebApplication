@@ -1,0 +1,24 @@
+BATA_AllTickets_JQL='project = TC AND "trucap client[dropdown]" = BATA ORDER BY created DESC'
+BATA_TITLE='BATA_Tickets'
+BATA_DESC='Tickets created For BATA TruCap+'
+BATA_COLOR=#f44336
+
+NielsenIQ_AllTickets_JQL='project = TC AND "trucap client[dropdown]" = NielsenIQ ORDER BY created DESC'
+NielsenIQ_TITLE='NielsenIQ_Tickets'
+NielsenIQ_DESC='Tickets created For NielsenIQ TruCap+'
+NielsenIQ_COLOR=#f44336
+
+NISC_AllTickets_JQL='project = TC AND "trucap client[dropdown]" IN (NISC, "NISC-DS&O Electric", "NISC-East Central Energy", "NISC-Endeavor Communications", "NISC-Northeast Missouri Electric")'
+NISC_TITLE='NISC_Tickets'
+NISC_DESC='Tickets created For NISC TruCap+'
+NISC_COLOR=#f44336
+
+IPRU_AllTickets_JQL='project = TC AND "trucap client[dropdown]" = IPRU ORDER BY created DESC'
+IPRU_TITLE='IPRU_Tickets'
+IPRU_DESC='Tickets created For IPRU TruCap+'
+IPRU_COLOR=#f44336
+
+RnaOMR_JQL='project = TC AND "trucap client[dropdown]" = "RnA OMR" ORDER BY created DESC'
+IPRU_TITLE='RnaOMR_Tickets'
+IPRU_DESC='Tickets created For RnaOMR TruCap+'
+IPRU_COLOR=#f44336

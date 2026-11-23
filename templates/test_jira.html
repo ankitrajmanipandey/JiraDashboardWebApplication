@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira Connection Test - Jira Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .content-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+
+        .test-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .status-ok {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .status-warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: #ff4757;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #ff3742;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <a href="{{ url_for('dashboard') }}" class="back-btn">
+                ← Back to Dashboard
+            </a>
+            <h1 style="margin-top: 15px; color: #333;">Jira Connection Test</h1>
+        </div>
+        <div>
+            <span style="margin-right: 15px; color: #666;">Welcome, {{ username }}!</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+    <div class="content-container">
+        <div class="test-section">
+            <h3>🔍 Connection Test Results</h3>
+            <p>Check the console/terminal for detailed connection test results.</p>
+            <p>This will help diagnose why the Jira API calls are failing.</p>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 What to Check</h3>
+            <ul style="margin-left: 20px;">
+                <li>Jira server URL is correct and accessible</li>
+                <li>Username and API token are valid</li>
+                <li>Jira version supports the API endpoints</li>
+                <li>Network connectivity and firewall settings</li>
+                <li>Jira instance configuration</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>🛠️ Troubleshooting Steps</h3>
+            <ol style="margin-left: 20px;">
+                <li>Check the console output for connection test results</li>
+                <li>Verify your JIRA_HOST, JIRA_USERNAME, and JIRA_API_TOKEN in .env file</li>
+                <li>Try accessing Jira in your browser to ensure it's reachable</li>
+                <li>Check if your Jira instance requires different API endpoints</li>
+                <li>Contact your Jira administrator if the issue persists</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>📞 Need Help?</h3>
+            <p>If you continue to have issues, please provide:</p>
+            <ul style="margin-left: 20px;">
+                <li>Console output from the connection test</li>
+                <li>Your Jira version</li>
+                <li>Any error messages you see</li>
+                <li>Your .env file configuration (without sensitive data)</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
