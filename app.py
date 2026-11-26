@@ -1,10 +1,15 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from flask import Flask, render_template, request, redirect, url_for, session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, timezone
+import calendar
+import logging
 import os
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 import re
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -80,6 +85,125 @@ def format_date(date_str):
         return dt.strftime('%Y-%m-%d %H:%M')
     except Exception:
         return date_str
+
+def app_timezone():
+    """Timezone used for fortnight boundaries and 'today'."""
+    name = os.environ.get('APP_TIMEZONE', '').strip()
+    if name:
+        try:
+            return ZoneInfo(name)
+        except Exception:
+            logger.warning("APP_TIMEZONE %s is unavailable; using the local timezone", name)
+    return datetime.now().astimezone().tzinfo or timezone.utc
+
+def fortnight_bounds(year, month, half):
+    """Return the inclusive start and end dates of one fortnight.
+
+    30- and 31-day months split on the 15th. February splits on the 14th
+    so both halves stay inside the month, including leap years.
+    """
+    days = calendar.monthrange(year, month)[1]
+    if days in (28, 29):
+        if half == 1:
+            return date(year, month, 1), date(year, month, 14)
+        return date(year, month, 15), date(year, month, days)
+    if half == 1:
+        return date(year, month, 1), date(year, month, 15)
+    return date(year, month, 16), date(year, month, days)
+
+def fortnight_half_containing(day):
+    first_start, first_end = fortnight_bounds(day.year, day.month, 1)
+    if first_start <= day <= first_end:
+        return 1
+    return 2
+
+def previous_fortnight(year, month, half):
+    if half == 2:
+        return year, month, 1
+    if month == 1:
+        return year - 1, 12, 2
+    return year, month - 1, 2
+
+def last_six_fortnights(today):
+    """Six fortnight periods ending with the one that contains today, oldest first."""
+    if isinstance(today, datetime):
+        today = today.date()
+    year, month = today.year, today.month
+    half = fortnight_half_containing(today)
+    periods = []
+    for _ in range(6):
+        periods.append(fortnight_bounds(year, month, half))
+        year, month, half = previous_fortnight(year, month, half)
+    periods.reverse()
+    return periods
+
+def format_fortnight_label(start, end):
+    if start.year == end.year:
+        return f"{start.strftime('%d %b')} – {end.strftime('%d %b %Y')}"
+    return f"{start.strftime('%d %b %Y')} – {end.strftime('%d %b %Y')}"
+
+def parse_jira_created(value):
+    """Parse a Jira created timestamp into an aware datetime."""
+    if not value or not isinstance(value, str):
+        return None
+    text = value.strip()
+    if text.endswith('Z'):
+        text = text[:-1] + '+00:00'
+    if len(text) >= 5 and text[-5] in '+-' and text[-3] != ':':
+        text = text[:-2] + ':' + text[-2:]
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+def ticket_created_date(created_value, tz):
+    parsed = parse_jira_created(created_value)
+    if parsed is None:
+        return None
+    return parsed.astimezone(tz).date()
+
+def count_issues_by_fortnight(issues, periods, today, tz):
+    """Count each issue once, using its created date, through today only."""
+    counts = [0] * len(periods)
+    seen = set()
+    for issue in issues or []:
+        issue_key = issue.get('key') or issue.get('id')
+        if issue_key:
+            if issue_key in seen:
+                continue
+            seen.add(issue_key)
+        fields = issue.get('fields') or {}
+        created_value = fields.get('created', issue.get('created'))
+        created_on = ticket_created_date(created_value, tz)
+        if created_on is None or created_on > today:
+            continue
+        for index, (start, end) in enumerate(periods):
+            window_end = end if end < today else today
+            if start <= created_on <= window_end:
+                counts[index] += 1
+                break
+    return counts
+
+def project_key_from_jql(jql):
+    match = re.search(r'project\s*=\s*"?([A-Za-z][A-Za-z0-9_]*)"?', jql or '', re.IGNORECASE)
+    return match.group(1) if match else None
+
+def is_trucap_dashboard(query_key, jql):
+    project_key = project_key_from_jql(jql)
+    if project_key and project_key.upper() == 'TC':
+        return True
+    return (query_key or '').lower().startswith('trucap')
+
+def build_fortnight_jql(project_key, start, today):
+    """Created-date window from the oldest fortnight through the end of today."""
+    end_exclusive = today + timedelta(days=1)
+    return (
+        f'project = {project_key} AND created >= "{start.isoformat()}" '
+        f'AND created < "{end_exclusive.isoformat()}" ORDER BY created ASC'
+    )
 
 def generate_summary_by_type(tickets, summary_type):
     """Generate summary based on the specified type (issue_type, client, priority) with status breakdown"""
@@ -194,6 +318,84 @@ def fetch_jira_tickets(jql_query, query_key, max_results=None):
         error_msg = f"Error fetching tickets: {e}"
         print(error_msg)
         return [], error_msg
+
+def fetch_issue_created_fields(jql_query):
+    """Page through Jira and return issue keys plus created timestamps only."""
+    print(f"Fetching created dates for fortnight trend: {jql_query}")
+    url = f"{JIRA_HOST}/rest/api/3/search/jql"
+    headers = {"Accept": "application/json", "Content-Type": "application/json"}
+    issues = []
+    seen = set()
+    next_page_token = None
+
+    try:
+        while True:
+            body = {
+                "jql": jql_query,
+                "maxResults": 100,
+                "fields": ["created"],
+            }
+            if next_page_token:
+                body["nextPageToken"] = next_page_token
+
+            response = requests.post(
+                url,
+                json=body,
+                headers=headers,
+                auth=HTTPBasicAuth(JIRA_USERNAME, JIRA_API_TOKEN),
+            )
+            if response.status_code != 200:
+                error_msg = f"Failed to fetch fortnight trend: {response.status_code} {response.text[:500]}"
+                logger.error(error_msg)
+                print(error_msg)
+                return [], error_msg
+
+            data = response.json()
+            for issue in data.get("issues", []):
+                issue_key = issue.get("key")
+                if issue_key:
+                    if issue_key in seen:
+                        continue
+                    seen.add(issue_key)
+                issues.append(issue)
+
+            next_page_token = data.get("nextPageToken")
+            if data.get("isLast", True) or not next_page_token:
+                break
+
+        print(f"Fortnight trend received {len(issues)} unique issues")
+        return issues, None
+    except Exception as e:
+        error_msg = f"Error fetching fortnight trend: {e}"
+        logger.exception(error_msg)
+        print(error_msg)
+        return [], error_msg
+
+def build_fortnight_trend(project_key, today=None, tz=None, issues=None):
+    """Build labels and counts for the last six fortnights.
+
+    Pass issues to aggregate local data. Otherwise one paginated Jira search
+    loads created dates for the TruCap+ project.
+    """
+    tz = tz or app_timezone()
+    if today is None:
+        today = datetime.now(tz).date()
+    elif isinstance(today, datetime):
+        today = today.astimezone(tz).date() if today.tzinfo else today.date()
+
+    periods = last_six_fortnights(today)
+    error = None
+    jql = build_fortnight_jql(project_key, periods[0][0], today)
+    if issues is None:
+        issues, error = fetch_issue_created_fields(jql)
+
+    counts = count_issues_by_fortnight(issues, periods, today, tz)
+    return {
+        "labels": [format_fortnight_label(start, end) for start, end in periods],
+        "counts": counts,
+        "error": error,
+        "jql": jql,
+    }
 
 def process_jira_response(data, query_key):
     """Process the Jira API response and extract ticket data."""
@@ -464,6 +666,22 @@ def tile_details(query_key):
     # Ensure all_statuses is always defined
     if 'all_statuses' not in locals():
         all_statuses = []
+
+    fortnight_trend = None
+    if is_trucap_dashboard(query_key, query_config.get('jql', '')):
+        project_key = project_key_from_jql(query_config.get('jql', '')) or 'TC'
+        try:
+            fortnight_trend = build_fortnight_trend(project_key)
+        except Exception as e:
+            logger.exception("Fortnight trend failed for %s", query_key)
+            print(f"Fortnight trend failed for {query_key}: {e}")
+            periods = last_six_fortnights(datetime.now(app_timezone()).date())
+            fortnight_trend = {
+                "labels": [format_fortnight_label(start, end) for start, end in periods],
+                "counts": [0] * len(periods),
+                "error": f"Unexpected error: {e}",
+                "jql": None,
+            }
     
     return render_template(
         'tile_details.html',
@@ -480,7 +698,8 @@ def tile_details(query_key):
         all_statuses=all_statuses, # Pass all_statuses to the template
         category_totals=category_totals,
         status_totals=status_totals,
-        grand_total=grand_total
+        grand_total=grand_total,
+        fortnight_trend=fortnight_trend
     )
 
 @app.route('/tile/<query_key>/tickets')

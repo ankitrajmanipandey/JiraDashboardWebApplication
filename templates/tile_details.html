@@ -256,6 +256,32 @@
             th, td {
                 padding: 8px 6px;
             }
+
+            .trend-chart-wrap {
+                height: 280px;
+            }
+        }
+
+        .trend-card {
+            margin-bottom: 28px;
+        }
+
+        .trend-card h2 {
+            color: #333;
+            font-size: 1.4em;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .trend-card p {
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .trend-chart-wrap {
+            position: relative;
+            height: 360px;
+            width: 100%;
         }
     </style>
 </head>
@@ -286,6 +312,81 @@
                     If the problem persists, please check your Jira configuration or contact your administrator.
                 </small>
             </div>
+        {% endif %}
+
+        {% if fortnight_trend %}
+        <div class="trend-card">
+            <h2>TruCap+ Fortnightly Ticket Trend</h2>
+            <p>Tickets created across the last six fortnights. The current fortnight counts tickets created through today.</p>
+            {% if fortnight_trend.error %}
+                <div class="error-message">
+                    <strong>Trend unavailable:</strong> {{ fortnight_trend.error }}
+                </div>
+            {% endif %}
+            <div class="trend-chart-wrap">
+                <canvas id="fortnightTrendChart" aria-label="TruCap+ tickets created over the last six fortnights"></canvas>
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+        <script>
+            (function () {
+                const labels = {{ fortnight_trend.labels | tojson }};
+                const counts = {{ fortnight_trend.counts | tojson }};
+                const canvas = document.getElementById('fortnightTrendChart');
+                if (!canvas || typeof Chart === 'undefined') {
+                    return;
+                }
+                const datalabels = window.ChartDataLabels;
+                new Chart(canvas, {
+                    type: 'bar',
+                    plugins: datalabels ? [datalabels] : [],
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Tickets created',
+                            data: counts,
+                            backgroundColor: '#4CAF50',
+                            borderRadius: 6,
+                            maxBarThickness: 72
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: { padding: { top: 28 } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return 'Tickets created: ' + context.parsed.y;
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'end',
+                                color: '#333',
+                                font: { weight: '600' },
+                                formatter: function (value) { return value; }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 },
+                                title: { display: true, text: 'Tickets created' }
+                            },
+                            x: {
+                                ticks: { maxRotation: 40, minRotation: 0 },
+                                title: { display: true, text: 'Fortnight' }
+                            }
+                        }
+                    }
+                });
+            })();
+        </script>
         {% endif %}
 
         <!-- Summary Type Navigation -->
